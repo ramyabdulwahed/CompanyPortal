@@ -18,3 +18,5 @@ __pycache__/
 
 # Environment variables files
 .env
+
+company_v3.02.sql
