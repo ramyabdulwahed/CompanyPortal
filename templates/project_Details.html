@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project Details</title>
+    <!-- CSS, uses flexbox to make a side-by-side layout for the table and the form -->
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { display: flex; gap: 50px; margin-top: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        .form-box { background: #f9f9f9; padding: 20px; border-radius: 5px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <!-- project header info, displays specific project name and department -->
+    <h1>Project: {{ project[0] }}</h1>
+    <h3>Department: {{ project[1] }}</h3>
+    
+    <!-- nav: link to go back to the main portfolio page -->
+    <a href="{{ url_for('projects') }}">Back to Projects List</a>
+    <hr>
+
+    <!-- main layout container: holds the list (left) and the form (right) -->
+    <div class="container">
+        
+        <!-- part 1: display emp table (left side) -->
+        <div style="flex: 1;">
+            <h2>Assigned Employees</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>Hours Assigned</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- loop through employees currently working on this project -->
+                    {% for emp in assigned %}
+                    <tr>
+                        <td>{{ emp[0] }} {{ emp[1] }}</td> <!-- first last -->
+                        <td>{{ emp[2] }}</td> <!-- hours -->
+                    </tr>
+                    {% else %}
+                    <!-- empty state: shown if no one is assigned yet -->
+                    <tr><td colspan="2">No employees assigned yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- part 2: upsert form (right side) -->
+        <div style="flex: 1;">
+            <div class="form-box">
+                <h2>Assign / Add Hours</h2>
+                
+                <!-- form submission: POSTs data to 'assign_hours' route with the current pno -->
+                <form action="{{ url_for('assign_hours', pno=pno) }}" method="POST">
+                    
+                    <!-- emp dropdown: lists all employees in the company so you can pick one to assign -->
+                    <label for="essn">Select Employee:</label><br>
+                    <select name="essn" id="essn" required style="width: 100%; padding: 5px;">
+                        <option value="" disabled selected>-- Select Employee --</option>
+                        {% for emp in all_employees %}
+                        <!-- value is SSN (hidden), display is name -->
+                        <option value="{{ emp[0] }}">{{ emp[1] }} {{ emp[2] }}</option>
+                        {% endfor %}
+                    </select>
+                    <br><br>
+
+                    <!-- number input for hours to add -->
+                    <label for="hours">Hours to Add:</label><br>
+                    <input type="number" name="hours" id="hours" step="0.1" min="0.1" required style="width: 100%; padding: 5px;">
+                    <br><br>
+
+                    <button type="submit" style="padding: 10px 20px;">Update Assignment</button>
+                </form>
+                
+            </div>
+        </div>
+    </div>
+</body>
+</html>

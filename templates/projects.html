@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projects Portfolio</title>
+    <!-- CSS: basic styling for the table layout -->
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Projects Portfolio</h1>
+    
+    <!-- navigation bar: links to switch between pages -->
+    <nav>
+        <a href="/">Home</a> | 
+        <a href="/projects">Projects Portfolio</a>
+    </nav>
+
+    <!-- main data table -->
+    <table>
+        <thead>
+            <tr>
+                <th>Project Name</th>
+                <th>Department</th>
+                
+                <!-- sortable header: headcount -->
+                <!-- If currently sorted by 'headcount', pressing toggles order. otherwise, defaults to asc. -->
+                <th>
+                    <a href="{{ url_for('projects', sort_by='headcount', order='asc' if current_sort != 'headcount' or current_order == 'desc' else 'desc') }}">
+                        Headcount
+                    </a>
+                </th>
+                
+                <!-- sortable header: total hours -->
+                <!-- logic: same toggle logic as above for total hours -->
+                <th>
+                    <a href="{{ url_for('projects', sort_by='total_hours', order='asc' if current_sort != 'total_hours' or current_order == 'desc' else 'desc') }}">
+                        Total Hours
+                    </a>
+                </th>
+                
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!--  loop: iterates through the list of projects sent from script -->
+            {% for row in projects %}
+            <tr>
+                <td>{{ row[1] }}</td> <!-- project name -->
+                <td>{{ row[2] }}</td> <!-- department name -->
+                <td>{{ row[3] }}</td> <!-- headcount  -->
+                <td>{{ row[4] }}</td> <!-- total hours -->
+                
+                <!--  link: navigates to the detailed view for this specific project ID (row[0]) -->
+                <td><a href="{{ url_for('project_details', pno=row[0]) }}">View Details</a></td>
+            </tr>
+            {% else %}
+            <!-- empty state: displays if the projects list is empty -->
+            <tr><td colspan="5">No projects found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

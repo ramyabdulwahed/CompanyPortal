@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Company Portal- Home</title>
+    <!-- CSS for basic styling of  table and filter box -->
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .filters { background: #f9f9f9; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Employee Overview</h1>
+    
+    <!-- nav bar: links to switch between pages -->
+    <nav>
+        <a href="/">Home</a> | 
+        <a href="/projects">Projects Portfolio</a>
+    </nav>
+    <br>
+
+    <!-- filter section: form to search and filter the employee list -->
+    <div class="filters">
+        <!-- form submits data to homepage ('/') using GET request -->
+        <form action="/" method="GET">
+            
+            <!-- search input: The 'value' attribute keeps the text there after the page refreshes -->
+            <label>Search Name:</label>
+            <input type="text" name="search" value="{{ current_search }}" placeholder="Partial name...">
+            
+            <!-- department dropdown: populates from the database -->
+            <label>Department:</label>
+            <select name="dept">
+                <option value="">All Departments</option>
+
+                <!-- loop through departments sent from scrip -->
+                {% for d in departments %}
+
+                <!-- checks if this department was already selected to keep it active -->
+                <option value="{{ d[0] }}" {% if current_dept|int == d[0] %}selected{% endif %}>
+                    {{ d[1] }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <!--  buttons -->
+            <button type="submit">Filter</button>
+            <a href="/">Reset</a>
+            
+            <!-- Export Button -->
+            <!-- pass all current filters (search, dept, sort) to the export route so the file matches the view -->
+            <a href="{{ url_for('export_csv', search=current_search, dept=current_dept, sort_by=current_sort, order=current_order) }}" style="margin-left: 10px;">
+                Export CSV
+            </a>
+            
+            <!-- hidden inputs: these make sure we don't lose the current sorting order when filter is clicked -->
+            <input type="hidden" name="sort_by" value="{{ current_sort }}">
+            <input type="hidden" name="order" value="{{ current_order }}">
+        </form>
+    </div>
+
+    <!-- data table -->
+    <table>
+        <thead>
+            <tr>
+                <!-- sortable header: logic to toggle asc/desc -->
+                <th>
+                    <a href="{{ url_for('index', sort_by='name', order='asc' if current_sort != 'name' or current_order == 'desc' else 'desc', search=current_search, dept=current_dept) }}">
+                        Full Name
+                    </a>
+                </th>
+                <th>Department</th>
+                <th>Dependents</th>
+                <th>Projects</th>
+                <!-- sortable header for total hours -->
+                <th>
+                    <a href="{{ url_for('index', sort_by='total_hours', order='asc' if current_sort != 'total_hours' or current_order == 'desc' else 'desc', search=current_search, dept=current_dept) }}">
+                        Total Hours
+                    </a>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- loop: iterates through every employee found in the db -->
+            {% for emp in employees %}
+            <tr>
+                <td>{{ emp[0] }} {{ emp[1] }}</td> <!-- fname-lname -->
+                <td>{{ emp[2] }}</td> <!-- dname -->
+                <td>{{ emp[3] }}</td> <!-- dependents -->
+                <td>{{ emp[4] }}</td> <!-- projects -->
+                <td>{{ emp[5] }}</td> <!-- total hours -->
+            </tr>
+            {% else %}
+            <!-- empty state: this row shows up only if the employees list is empty -->
+            <tr><td colspan="5">No employees found criteria.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

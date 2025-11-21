@@ -19,9 +19,8 @@ def get_database():
 """
 Closes database connection
 """
-def close_database():
-    db = g.pop('db, None')
-
+def close_database(e=None): 
+    db = g.pop('db', None) 
     if db is not None:
         db.close()
 
