@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<head>
+    <title>Project Details</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { display: flex; gap: 50px; margin-top: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        .form-box { background: #f9f9f9; padding: 20px; border-radius: 5px; border: 1px solid #ddd; }
+    </style>
+</head>
+<html>
+    <body>
+    <div class="nav">
+        <a href="/">Home</a> |
+        <a href="/projects">Projects Portfolio</a> |
+        <a href="/managers">Managers Overview</a> |
+        <a href="/logout">Logout</a>
+    </div>
+
+    <h1>Managers Overview</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Department Number</th>
+                <th>Department Name</th>
+                <th>Manager Name</th>
+                <th>Employee Count</th>
+                <th>Total Hours Worked</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dept in departments %}
+            <tr>
+                <td>{{ dept[0] }}</td>
+                <td>{{ dept[1] }}</td>
+                <td>{{ dept[2] }}</td>
+                <td>{{ dept[3] }}</td>
+                <td>{{ dept[4] }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center;">No departments found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -4,6 +4,7 @@ import psycopg
 import os
 import csv
 import io
+import database
 
 ## flask = web framework 
 # render_template = Loads HTML files. 
@@ -19,6 +20,7 @@ import io
 app = Flask(__name__)
 app.secret_key = "3530databasesecretkey"
 
+database.init_app(app)
 
 #function below connects to the database
 def get_database():
@@ -369,6 +371,53 @@ def export_csv():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment;filename=employee_list.csv"}
     )
+
+@app.route("/managers")
+def managers():
+    if not login_required():
+        return redirect("/login")
+
+    conn = database.get_database()
+    cur = conn.cursor()
+    
+    query = """
+        SELECT 
+            d.Dnumber,
+            d.Dname,
+            m.Fname,
+            m.Minit,
+            m.Lname,
+            COUNT(DISTINCT e.Ssn) AS employee_count,
+            COALESCE(SUM(w.Hours), 0) AS total_hours
+        FROM Department d
+        LEFT JOIN Employee m ON d.Mgr_ssn = m.Ssn
+        LEFT JOIN Employee e ON d.Dnumber = e.Dno
+        LEFT JOIN Works_On w ON e.Ssn = w.Essn
+        GROUP BY d.Dnumber, d.Dname, m.Fname, m.Minit, m.Lname
+        ORDER BY d.Dname
+    """
+    
+    cur.execute(query)
+    raw_data = cur.fetchall()
+    
+    # Format data using helper function
+    departments = []
+    for row in raw_data:
+        dnumber, dname, fname, minit, lname, emp_count, total_hours = row
+        manager_name = format_employee_name(fname, minit, lname)
+        departments.append((dnumber, dname, manager_name, emp_count, total_hours))
+    
+    return render_template("managers.html", departments=departments)
+
+def format_employee_name(fname, minit, lname):
+    """Helper function to format employee names consistently"""
+    if not fname or not lname:
+        return "N/A"
+    
+    if minit and minit.strip():
+        return f"{fname} {minit}. {lname}"
+    else:
+        return f"{fname} {lname}"
 
 if __name__ == "__main__":
     app.run(debug=True)
