@@ -55,6 +55,7 @@ createdb company_portal_db
 ---
 
 # 3. Load Schema (Base Company Schema)
+    Note: Marker should run company_v3.02.sql first, then team_setup.sql as shown in the setup steps.
     1. psql -d $env:DATABASE_URL -f company_v3.02.sql
 
 
@@ -112,3 +113,8 @@ This file contains:
     **Viewer Account**
     - username: viewer1
     - password: viewer123
+
+
+# Bonus
+
+# 8. We implemented RBAC with two roles: admin and viewer. Admins can modify data. Viewers are restricted to read-only access, and all modify routes enforce backend permission checks (meaning even if user enters path they cant access forms/pages)
