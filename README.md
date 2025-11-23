@@ -77,6 +77,29 @@ This file contains:
 # 6. Index Justification
 
 
+1. idx_employee_name (Lname, Fname)
+
+    CREATE INDEX IF NOT EXISTS idx_employee_name ON Employee (Lname, Fname);
+
+    Reason: This index improves performance of the Employee Overview page (A2).
+
+    On this page, we allow the user to:
+
+        1. Search by first or last name
+
+        2. Sort employees alphabetically (ORDER BY e.Lname, e.Fname)
+
+    Because the query frequently filters or orders by Lname, Fname, this index allows PostgreSQL to avoid scanning the entire Employee table and instead use a sorted index to retrieve matching rows efficiently.
+
+2. dx_workson_pno (Works_On Pno) 
+    CREATE INDEX IF NOT EXISTS idx_workson_pno ON Works_On (Pno); 
+    
+    Reason: This index improves performance of: Projects Portfolio page (A3) Project Details page (A4) 
+    Both pages repeatedly run aggregate queries like:
+        1. SELECT COUNT(w.Essn), SUM(w.Hours) FROM Works_On w WHERE w.Pno = ...
+        2. JOIN Works_On w ON p.Pnumber = w.Pno
+    Because these queries filter and group by Pno, indexing Pno significantly speeds up lookups and reduces full-table scans of Works_On.
+
 
 ---
 
