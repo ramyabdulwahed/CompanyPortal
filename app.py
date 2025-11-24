@@ -6,6 +6,7 @@ import csv
 import io
 import database
 from functools import wraps
+import pandas as pd
 
 ## flask = web framework 
 # render_template = Loads HTML files. 
@@ -16,6 +17,7 @@ from functools import wraps
 # psycopg = The PostgreSQL database connection
 # csv= To export CSV files
 # io= To handle in-memory file operations
+# pandas= To handle excel imports
 
 
 app = Flask(__name__)
@@ -594,6 +596,243 @@ def create_employee():
         supervisors = cur.fetchall()
         
         return render_template("employee_add.html", departments=departments, supervisors=supervisors, error=error)
+
+@app.route("/import", methods=["GET", "POST"])
+@admin_required
+def import_excel():
+    if not login_required():
+        return redirect("/login")
+
+    if request.method == "GET":
+        return render_template("import_excel.html", error=None, success=None)
+
+    if 'file' not in request.files:
+        return render_template("import_excel.html", error="No file uploaded", success=None)
+
+    file = request.files['file']
+    table_choice = request.form.get('table')
+
+    if file.filename == '':
+        return render_template("import_excel.html", error="No file selected", success=None)
+
+    if not file.filename.endswith('.xlsx'):
+        return render_template("import_excel.html", error="File must be .xlsx", success=None)
+
+    if not table_choice:
+        return render_template("import_excel.html", error="Please select a table", success=None)
+
+    try:
+        # Remove blanks
+        df = pd.read_excel(file).dropna(how="all")
+
+        if table_choice == "employee":
+            result = import_employees_df(df)
+        elif table_choice == "dependent":
+            result = import_dependents_df(df)
+        elif table_choice == "project":
+            result = import_projects_df(df)
+        else:
+            return render_template("import_excel.html", error="Invalid table", success=None)
+
+        if result["success"]:
+            return render_template("import_excel.html", error=None, success=f"Imported {result['count']} rows into {table_choice}")
+
+        return render_template("import_excel.html", error=result["error"], success=None)
+
+    except Exception as e:
+        return render_template("import_excel.html", error=f"Error reading file: {str(e)}", success=None)
+    
+def import_employees_df(df):
+    conn = database.get_database()
+    cur = conn.cursor()
+
+    required = ["Ssn", "Fname", "Minit", "Lname", "Address", "Sex", "Salary", "Super_ssn", "Dno", "BDate", "EmpDate"]
+
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        return {"success": False, "error": "Missing columns: " + ", ".join(missing)}
+
+    errors = []
+    valid = []
+
+    for idx, row in df.iterrows():
+        excel_row = idx + 2
+
+        ssn = str(row["Ssn"]).strip()
+        print("SSN: ", ssn)
+        fname = str(row["Fname"]).strip()
+        minit = str(row["Minit"]).strip()[:1] if pd.notna(row["Minit"]) else " "
+        lname = str(row["Lname"]).strip()
+        address = str(row["Address"]).strip()
+        sex = str(row["Sex"]).upper()
+        salary = row["Salary"]
+
+        # Remove .0 from the super ssn
+        if pd.notna(row["Super_ssn"]):
+            super_ssn = row["Super_ssn"]
+            if isinstance(super_ssn, float):
+                super_ssn = str(int(super_ssn))
+            else:
+                super_ssn = str(super_ssn).strip()
+        else:
+            super_ssn = None
+
+        dno = row["Dno"]
+        bdate = row["BDate"]
+        empdate = row["EmpDate"]
+
+        # Validate fields
+        if len(ssn) != 9:
+            errors.append(f"Row {excel_row}: SSN must be 9 digits")
+            continue
+
+        if sex not in ["M", "F"]:
+            errors.append(f"Row {excel_row}: Sex must be M or F")
+            continue
+
+        try:
+            salary = int(salary)
+        except:
+            errors.append(f"Row {excel_row}: Salary must be an integer")
+            continue
+
+        if salary < 0:
+            errors.append(f"Row {excel_row}: Salary must be positive")
+            continue
+
+        cur.execute("SELECT COUNT(*) FROM Department WHERE Dnumber=%s", (dno,))
+        if cur.fetchone()[0] == 0:
+            errors.append(f"Row {excel_row}: Department {dno} does not exist")
+            continue
+
+        if super_ssn:
+            print(f"Checking supervisor SSN: '{super_ssn}'")
+            cur.execute("SELECT COUNT(*) FROM Employee WHERE Ssn=%s", (super_ssn,))
+            print(cur.fetchone()[0])
+            cur.execute("SELECT COUNT(*) FROM Employee WHERE Ssn=%s", (super_ssn,))
+            if cur.fetchone()[0] == 0:
+                errors.append(f"Row {excel_row}: Supervisor {super_ssn} does not exist")
+                continue
+
+        
+        valid.append((
+            fname, minit, lname, ssn, address, sex, salary,
+            super_ssn, dno, bdate, empdate
+        ))
+
+    if errors:
+        conn.rollback()
+        return {"success": False,
+                "error": "Validation failed:\n" + "\n".join(errors)}
+
+    try:
+        cur.executemany("""
+            INSERT INTO Employee(Fname, Minit, Lname, Ssn, Address, Sex, Salary, Super_ssn, Dno, BDate, EmpDate)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, valid)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return {"success": False, "error": f"Database error: {str(e)}"}
+
+    return {"success": True, "count": len(valid)}
+
+def import_dependents_df(df):
+    conn = database.get_database()
+    cur = conn.cursor()
+
+    required = ["Essn", "Dependent_name", "Sex", "Bdate", "Relationship"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        return {"success": False, "error": "Missing columns: " + ", ".join(missing)}
+
+    errors = []
+    valid = []
+
+    for idx, row in df.iterrows():
+        excel_row = idx + 2
+
+        essn = str(row["Essn"]).strip()
+        dep = str(row["Dependent_name"]).strip()
+        sex = str(row["Sex"]).upper()
+        bdate = row["Bdate"]
+        rel = str(row["Relationship"]).strip()
+
+        if sex not in ["M", "F"]:
+            errors.append(f"Row {excel_row}: Sex must be M or F")
+            continue
+
+        # Check employee exists
+        cur.execute("SELECT COUNT(*) FROM Employee WHERE Ssn=%s", (essn,))
+        if cur.fetchone()[0] == 0:
+            errors.append(f"Row {excel_row}: Employee {essn} does not exist")
+            continue
+
+        valid.append((essn, dep, sex, bdate, rel))
+
+    if errors:
+        conn.rollback()
+        return {"success": False, "error": "Validation failed:\n" + "\n".join(errors)}
+
+    try:
+        cur.executemany("""
+            INSERT INTO Dependent(Essn, Dependent_name, Sex, Bdate, Relationship)
+            VALUES (%s, %s, %s, %s, %s)
+        """, valid)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return {"success": False, "error": f"Database error: {str(e)}"}
+
+    return {"success": True, "count": len(valid)}
+
+def import_projects_df(df):
+    conn = database.get_database()
+    cur = conn.cursor()
+
+    required = ["Pnumber", "Pname", "Plocation", "Dnum"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        return {"success": False, "error": "Missing columns: " + ", ".join(missing)}
+
+    errors = []
+    valid = []
+
+    for idx, row in df.iterrows():
+        excel_row = idx + 2
+
+        try:
+            pnumber = int(row["Pnumber"])
+        except:
+            errors.append(f"Row {excel_row}: Pnumber must be an integer")
+            continue
+
+        pname = str(row["Pname"]).strip()
+        ploc = str(row["Plocation"]).strip()
+        dnum = row["Dnum"]
+
+        cur.execute("SELECT COUNT(*) FROM Department WHERE Dnumber=%s", (dnum,))
+        if cur.fetchone()[0] == 0:
+            errors.append(f"Row {excel_row}: Department {dnum} does not exist")
+            continue
+
+        valid.append((pname, pnumber, ploc, dnum))
+
+    if errors:
+        conn.rollback()
+        return {"success": False, "error": "Validation failed:\n" + "\n".join(errors)}
+
+    try:
+        cur.executemany("""
+            INSERT INTO Project(Pname, Pnumber, Plocation, Dnum)
+            VALUES (%s, %s, %s, %s)
+        """, valid)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return {"success": False, "error": f"Database error: {str(e)}"}
+
+    return {"success": True, "count": len(valid)}
 
 if __name__ == "__main__":
     app.run(debug=True)

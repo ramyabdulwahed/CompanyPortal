@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Import from Excel</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .form-container { max-width: 600px; background: white; padding: 30px; border-radius: 5px; }
+        .form-group { margin-bottom: 20px; }
+        .upload-btn { background-color: green; color: white; padding: 15px 30px; margin-top: 20px 0; }
+        .cancel-btn { background-color: black;color: white; margin-left: 10px; padding: 15px 30px; margin-top: 20px 0; }
+        .error { color: red; margin-bottom: 20px; }
+        .success { color: green; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Import Data from Excel</h1>
+    
+    <nav>
+        <a href="/">Home</a> | 
+        <a href="/projects">Projects Portfolio</a> |
+        <a href="/managers">Managers Overview</a> |
+        <a href="/logout">Logout</a>
+    </nav>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if success %}
+    <div class="success">{{ success }}</div>
+    {% endif %}
+
+    <div class="form-container">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="table">Select Table: (req*)</label>
+                <select id="table" name="table" required>
+                    <option value="">Select Table</option>
+                    <option value="employee">Employee</option>
+                    <option value="dependent">Dependent</option>
+                    <option value="project">Project</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="file">Choose Excel File (.xlsx): (req*)</label>
+                <input type="file" id="file" name="file" accept=".xlsx" required>
+            </div>
+
+            <button type="submit" class="upload-btn">Upload and Import</button>
+            <button type="button" class="cancel-btn" onclick="window.location.href='/'">Cancel</button>
+        </form><br>
+
+        <div>
+            <strong>Excel Format Guide:</strong>
+            <ul>
+                <li><strong>Employee:</strong> Ssn | Fname | Minit | Lname | BDate | Address | Sex | Salary | Super_ssn | Dno | EmpDate</li>
+                <li><strong>Dependent:</strong> Essn | Dependent_name | Sex | Relationship | Bdate</li>
+                <li><strong>Project:</strong> Pname | Pnum | Plocation | Dnum</li>
+            </ul>
+            <p>(All rows must be valid. Invalid data will reject the entire import)</p>
+        </div>
+    </div>
+</body>
+</html>

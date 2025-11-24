@@ -6,10 +6,11 @@
     <style>
         body { font-family: sans-serif; padding: 20px; }
         table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .filters { background: #f9f9f9; padding: 15px; border-radius: 5px; }
-        .add-employee-btn { background-color: #105e12; color: white; padding: 15px 30px; margin-top: 20px 0; }
+        th, td { border: 1px white; padding: 8px; text-align: left; }
+        th { background-color: white; }
+        .filters { background: white; padding: 15px; border-radius: 5px; }
+        .add-employee-btn { background-color: green; color: white; padding: 15px 30px; margin-top: 20px 0; }
+        .import-btn { background-color: blue; color: white; padding: 15px 30px; margin-top: 20px 0;}
     </style>
 </head>
 <body>
@@ -68,6 +69,7 @@
     {% if session["role"] == "admin" %}
         <div>
             <a href="{{ url_for('create_employee') }}", class="add-employee-btn">Add New Employee</a>
+            <a href="{{ url_for('import_excel') }}", class="import-btn">Import Excel</a>
         </div><br>
     {% endif %}
 
