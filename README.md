@@ -118,3 +118,5 @@ This file contains:
 # Bonus
 
 # 8. We implemented RBAC with two roles: admin and viewer. Admins can modify data. Viewers are restricted to read-only access, and all modify routes enforce backend permission checks (meaning even if user enters path they cant access forms/pages)
+
+# 9. The Excel import was implemented to work with importing: Projects, Employees, and Dependents. This import is also Admin access only
